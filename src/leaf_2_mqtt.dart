@@ -143,6 +143,9 @@ void subscribeToCommands(MqttClientWrapper mqttClient, String vin) {
 
   subscribe('command/battery', (String payload) {
       switch (payload) {
+        case 'refresh':
+            refreshAndPublishBatteryStatus(mqttClient, vin);
+          break;
         case 'update':
             fetchAndPublishBatteryStatus(mqttClient, vin);
           break;
@@ -157,6 +160,9 @@ void subscribeToCommands(MqttClientWrapper mqttClient, String vin) {
 
   subscribe('command/climate', (String payload) {
     switch (payload) {
+      case 'refresh':
+          refreshAndPublishClimateStatus(mqttClient, vin);
+        break;
       case 'update':
           fetchAndPublishClimateStatus(mqttClient, vin);
         break;
@@ -225,10 +231,26 @@ Future<void> fetchAndPublishMonthlyStats(MqttClientWrapper mqttClient, String vi
            vehicle.fetchMonthlyStatistics(targetMonth), vin).then(mqttClient.publishStates);
 }
 
+Future<void> refreshAndPublishBatteryStatus(MqttClientWrapper mqttClient, String vin) {
+  _log.finer('refreshAndPublishBatteryStatus for $vin');
+  return _session.executeWithRetry((Vehicle vehicle) =>
+           vehicle.refreshBatteryStatus(), vin).then(
+             _session.executeWithRetry((Vehicle vehicle) =>
+               vehicle.fetchBatteryStatus(), vin)).then(mqttClient.publishStates);
+}
+
 Future<void> fetchAndPublishBatteryStatus(MqttClientWrapper mqttClient, String vin) {
   _log.finer('fetchAndPublishBatteryStatus for $vin');
   return _session.executeWithRetry((Vehicle vehicle) =>
            vehicle.fetchBatteryStatus(), vin).then(mqttClient.publishStates);
+}
+
+Future<void> refreshAndPublishClimateStatus(MqttClientWrapper mqttClient, String vin) {
+  _log.finer('refreshAndPublishClimateStatus for $vin');
+  return _session.executeWithRetry((Vehicle vehicle) =>
+           vehicle.refreshClimateStatus(), vin).then(
+             _session.executeWithRetry((Vehicle vehicle) =>
+               vehicle.fetchClimateStatus(), vin)).then(mqttClient.publishStates);
 }
 
 Future<void> fetchAndPublishClimateStatus(MqttClientWrapper mqttClient, String vin) {

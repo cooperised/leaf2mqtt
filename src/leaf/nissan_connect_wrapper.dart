@@ -86,6 +86,11 @@ class NissanConnectVehicleWrapper extends VehicleInternal {
   }
 
   @override
+  Future<bool> refreshBatteryStatus() async {
+    return await _getVehicle().requestBatteryStatusRefresh();
+  }
+
+  @override
   Future<bool> startCharging() =>
     _getVehicle().requestChargingStart();
 
@@ -100,6 +105,11 @@ class NissanConnectVehicleWrapper extends VehicleInternal {
             .withCabinTemperatureCelsius(hvac.cabinTemperature)
             .withHvacRunningStatus(hvac.isRunning)
             .build());
+  }
+  
+  @override
+  Future<bool> refreshClimateStatus() async {
+    return await _getVehicle().requestClimateStatusRefresh();
   }
 
   @override
