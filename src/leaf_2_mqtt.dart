@@ -65,6 +65,11 @@ Future<void> main() async {
   mqttClient.onConnected = () => _onConnected(mqttClient);
   _onConnected(mqttClient);
 
+  ProcessSignal.sigterm.watch().listen((signal) {
+    _log.info('Caught SIGTERM');
+    exit(0);
+  });
+
   // Starting one loop per vehicle because each can have different interval depending on their state.
   await Future.wait(_session.vehicles.map((Vehicle vehicle) => startUpdateLoop(mqttClient, vehicle.vin)));
 }
@@ -108,7 +113,7 @@ Future<void> startUpdateLoop(MqttClientWrapper mqttClient, String vin) async {
   subscribeToCommands(mqttClient, vin);
 
   while (true) {
-    await fetchAndPublishAllStatus(mqttClient, vin);
+    await fetchAndPublishBatteryStatus(mqttClient, vin);
 
     int calculatedUpdateIntervalMinutes = updateIntervalMinutes;
     if ((_session.executeSync((Vehicle vehicle) => vehicle.isCharging, vin) ?? false) &&
@@ -160,9 +165,6 @@ void subscribeToCommands(MqttClientWrapper mqttClient, String vin) {
 
   subscribe('command/climate', (String payload) {
     switch (payload) {
-      case 'refresh':
-          refreshAndPublishClimateStatus(mqttClient, vin);
-        break;
       case 'update':
           fetchAndPublishClimateStatus(mqttClient, vin);
         break;
@@ -231,26 +233,18 @@ Future<void> fetchAndPublishMonthlyStats(MqttClientWrapper mqttClient, String vi
            vehicle.fetchMonthlyStatistics(targetMonth), vin).then(mqttClient.publishStates);
 }
 
-Future<void> refreshAndPublishBatteryStatus(MqttClientWrapper mqttClient, String vin) {
+Future<void> refreshAndPublishBatteryStatus(MqttClientWrapper mqttClient, String vin) async {
   _log.finer('refreshAndPublishBatteryStatus for $vin');
+  await _session.executeWithRetry((Vehicle vehicle) =>
+           vehicle.refreshBatteryStatus(), vin);
   return _session.executeWithRetry((Vehicle vehicle) =>
-           vehicle.refreshBatteryStatus(), vin).then(
-             _session.executeWithRetry((Vehicle vehicle) =>
-               vehicle.fetchBatteryStatus(), vin)).then(mqttClient.publishStates);
+               vehicle.fetchBatteryStatus(), vin).then(mqttClient.publishStates);
 }
 
 Future<void> fetchAndPublishBatteryStatus(MqttClientWrapper mqttClient, String vin) {
   _log.finer('fetchAndPublishBatteryStatus for $vin');
   return _session.executeWithRetry((Vehicle vehicle) =>
            vehicle.fetchBatteryStatus(), vin).then(mqttClient.publishStates);
-}
-
-Future<void> refreshAndPublishClimateStatus(MqttClientWrapper mqttClient, String vin) {
-  _log.finer('refreshAndPublishClimateStatus for $vin');
-  return _session.executeWithRetry((Vehicle vehicle) =>
-           vehicle.refreshClimateStatus(), vin).then(
-             _session.executeWithRetry((Vehicle vehicle) =>
-               vehicle.fetchClimateStatus(), vin)).then(mqttClient.publishStates);
 }
 
 Future<void> fetchAndPublishClimateStatus(MqttClientWrapper mqttClient, String vin) {

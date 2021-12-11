@@ -106,11 +106,6 @@ class NissanConnectVehicleWrapper extends VehicleInternal {
             .withHvacRunningStatus(hvac.isRunning)
             .build());
   }
-  
-  @override
-  Future<bool> refreshClimateStatus() async {
-    return await _getVehicle().requestClimateStatusRefresh();
-  }
 
   @override
   Future<bool> startClimate(int targetTemperatureCelsius) =>

@@ -76,6 +76,12 @@ class CarwingsVehicleWrapper extends VehicleInternal {
   }
 
   @override
+  Future<bool> refreshBatteryStatus() {
+    // DUMMY
+    return Future.value(true);
+  }
+
+  @override
   Future<bool> startCharging() async {
     await _getVehicle().requestChargingStart(DateTime.now());
     return true;
@@ -92,7 +98,7 @@ class CarwingsVehicleWrapper extends VehicleInternal {
             .build());
   }
 
-  @override
+ @override
   Future<bool> startClimate(int targetTemperatureCelsius) async {
       await _getVehicle().requestClimateControlOn();
       return true;
