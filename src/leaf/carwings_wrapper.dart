@@ -2,6 +2,7 @@ import 'package:dartcarwings/dartcarwings.dart';
 
 import 'builder/leaf_battery_builder.dart';
 import 'builder/leaf_climate_builder.dart';
+import 'builder/leaf_location_builder.dart';
 import 'builder/leaf_stats_builder.dart';
 import 'leaf_session.dart';
 import 'leaf_vehicle.dart';
@@ -89,7 +90,7 @@ class CarwingsVehicleWrapper extends VehicleInternal {
 
   @override
   Future<Map<String, String>> fetchClimateStatus() async {
-    final CarwingsCabinTemperature cabinTemperature = await _getVehicle().requestCabinTemperatureLatest();
+    final CarwingsCabinTemperature cabinTemperature = await _getVehicle().requestCabinTemperature();
     final CarwingsHVAC hvac = await _getVehicle().requestHVACStatus();
 
     return saveAndPrependVin(ClimateInfoBuilder()
@@ -108,5 +109,14 @@ class CarwingsVehicleWrapper extends VehicleInternal {
   Future<bool> stopClimate() async {
     await _getVehicle().requestClimateControlOff();
     return true;
+  }
+
+  @override
+  Future<Map<String, String>> fetchLocation() async {
+    final CarwingsLocation location = await _getVehicle().requestLocation();
+    return saveAndPrependVin(LocationInfoBuilder()
+      .withLatitude(location.latitude)
+      .withLongitude(location.longitude)
+      .build());
   }
 }
